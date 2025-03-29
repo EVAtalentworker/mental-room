@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 问答</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="top-navbar">
+        <div class="nav-content">
+            <div class="nav-title">Wegather</div>
+        </div>
+    </div>
+
+    <!-- 侧边栏 -->
+    <!-- 在 sidebar 中添加历史记录容器 -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h3>
+                <span id="chatTypeText">文字对话</span>
+                <button id="toggleChatType" class="toggle-btn">📕</button>
+            </h3>
+        </div>
+        <button id="newChatButton" class="new-chat-btn">新对话</button>
+        <button id="clearHistoryButton" class="clear-chat-btn">清空历史</button>
+        <div class="history-divider">历史记录</div>
+        <div id="chatHistory" class="chat-history"></div>
+        
+        <!-- 添加返回主页按钮 -->
+        <a href="{{ url_for('index') }}" class="home-btn">返回主页</a>
+    </div>
+
+    <div class="main-content">
+        <div class="chat-container" id="chat-container">
+            <!-- AI 初始消息 -->
+            <div class="message ai-message">
+                <div class="message-content">
+                    你好！我是你的 AI 语音助手。你可以直接输入文字，或点击下方麦克风按钮进行语音输入。
+                </div>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <div class="input-wrapper">
+                <form id="chatForm" class="input-form">
+                    <input type="text" class="chat-input" id="textInput" 
+                           placeholder="输入消息或点击麦克风语音输入..." autocomplete="off">
+                    <div class="button-group">
+                        <button type="button" class="voice-btn" id="recordButton" title="点击开始语音输入">
+                            <svg viewBox="0 0 24 24" width="20" height="20">
+                                <path fill="currentColor" d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                                <path fill="currentColor" d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                            </svg>
+                        </button>
+                        <button type="submit" class="send-btn" title="发送消息">
+                            <svg viewBox="0 0 24 24" width="20" height="20">
+                                <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="input-footer">
+                AI助手仅供参考，请勿过分依赖
+            </div>
+        </div>
+    </div>
+
+    <!-- 在 script 部分修改代码 -->
+    <script>
+        const recordButton = document.getElementById('recordButton');
+        const chatForm = document.getElementById('chatForm');
+        const textInput = document.getElementById('textInput');
+        const chatContainer = document.getElementById('chat-container');
+        let isRecording = false;
+        let isVoiceMode = false;  // 添加模式标志
+        
+        // 更新切换按钮处理程序
+        const toggleButton = document.getElementById('toggleChatType');
+        const chatTypeText = document.getElementById('chatTypeText');
+
+        // 添加对话管理相关变量
+        let currentChatId = Date.now().toString();
+        let chats = {
+            [currentChatId]: {
+                name: 'new chat',
+                messages: [{
+                    type: 'ai',
+                    content: '你好！我是你的 AI 语音助手。你可以直接输入文字，或点击下方麦克风按钮进行语音输入。'
+                }]
+            }
+        };
+
+        // 修改删除对话函数
+        function deleteChat(chatId) {
+            if (Object.keys(chats).length === 1) {
+                return; // 如果只有一个对话，不允许删除
+            }
+            
+            if (chatId === currentChatId) {
+                // 切换到其他对话
+                const otherChatId = Object.keys(chats).find(id => id !== chatId);
+                currentChatId = otherChatId;
+                updateChatDisplay();
+            }
+            delete chats[chatId];
+            updateHistoryList();
+        }
+
+        // 更新消息显示函数
+        function updateChatDisplay() {
+            chatContainer.innerHTML = '';
+            chats[currentChatId].messages.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${msg.type}-message`;
+                messageDiv.innerHTML = `<div class="message-content">${msg.content}</div>`;
+                chatContainer.appendChild(messageDiv);
+            });
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 更新历史记录显示
+        function updateHistoryList() {
+            const historyContainer = document.getElementById('chatHistory');
+            historyContainer.innerHTML = '';
+            Object.keys(chats).forEach(chatId => {
+                if (chatId === 'default') return;
+                const chatButton = document.createElement('button');
+                chatButton.className = 'history-item' + (chatId === currentChatId ? ' active' : '');
+                chatButton.innerHTML = `
+                    ${chats[chatId].name}
+                    <span class="delete-chat-btn" onclick="event.stopPropagation(); deleteChat('${chatId}')">×</span>
+                `;
+                chatButton.onclick = () => switchChat(chatId);
+                historyContainer.appendChild(chatButton);
+            });
+        }
+
+        // 切换对话
+        function switchChat(chatId) {
+            currentChatId = chatId;
+            updateChatDisplay();
+            updateHistoryList();
+        }
+
+        // 修改添加消息函数
+        function addMessage(text, isUser = false) {
+            const messageType = isUser ? 'user' : 'ai';
+            const chat = chats[currentChatId];
+            
+            // 如果是用户的第一条消息，更新对话名称
+            if (isUser && chat.messages.filter(m => m.type === 'user').length === 0) {
+                chat.name = text.length > 20 ? text.substring(0, 20) + '...' : text;
+                updateHistoryList();
+            }
+            
+            chat.messages.push({
+                type: messageType,
+                content: text
+            });
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${messageType}-message`;
+            messageDiv.innerHTML = `<div class="message-content">${text}</div>`;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // 修改新对话按钮处理程序
+        document.getElementById('newChatButton').addEventListener('click', () => {
+            const newChatId = Date.now().toString();
+            chats[newChatId] = {
+                name: 'new chat',
+                messages: [{
+                    type: 'ai',
+                    content: '你好！我是你的 AI 语音助手。你可以直接输入文字，或点击下方麦克风按钮进行语音输入。'
+                }]
+            };
+            currentChatId = newChatId;
+            updateHistoryList();
+            chatContainer.innerHTML = `
+                <div class="message ai-message">
+                    <div class="message-content">
+                        你好！我是你的 AI 语音助手。你可以直接输入文字，或点击下方麦克风按钮进行语音输入。
+                    </div>
+                </div>
+            `;
+        });
+
+        // 修改清空历史按钮处理程序
+        document.getElementById('clearHistoryButton').addEventListener('click', () => {
+            chats[currentChatId].messages = [{
+                type: 'ai',
+                content: '对话已清空。你可以开始新的对话了。'
+            }];
+            updateChatDisplay();
+        });
+
+        toggleButton.addEventListener('click', () => {
+            isVoiceMode = !isVoiceMode;
+            if (isVoiceMode) {
+                toggleButton.textContent = '🔈';
+                chatTypeText.textContent = '语音对话';
+            } else {
+                toggleButton.textContent = '📕';
+                chatTypeText.textContent = '文字对话';
+            }
+        });
+
+        // 处理文本输入
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const text = textInput.value.trim();
+            if (!text) return;
+
+            addMessage(text, true);
+            textInput.value = '';
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        message: text,
+                        isVoiceMode: isVoiceMode
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    addMessage(data.response);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('发生错误，请重试');
+            }
+        });
+
+        // 处理语音输入
+        recordButton.addEventListener('click', async () => {
+            if (!isRecording) {
+                // 开始录音
+                isRecording = true;
+                recordButton.classList.add('recording');
+                
+                try {
+                    const response = await fetch('/start_recording', {
+                        method: 'POST'
+                    });
+                    const data = await response.json();
+                    
+                    if (!data.success) {
+                        throw new Error(data.error);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    addMessage('录音出错，请重试');
+                    recordButton.classList.remove('recording');
+                    isRecording = false;
+                }
+            } else {
+                // 停止录音
+                try {
+                    const response = await fetch('/stop_recording', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            isVoiceMode: isVoiceMode
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        addMessage(data.text, true);
+                        addMessage(data.response);
+                    } else {
+                        throw new Error(data.error);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    addMessage('识别出错，请重试');
+                } finally {
+                    recordButton.classList.remove('recording');
+                    isRecording = false;
+                }
+            }
+        });
+
+        // 新对话按钮
+        document.getElementById('newChatButton').addEventListener('click', () => {
+            chatContainer.innerHTML = `
+                <div class="message ai-message">
+                    <div class="message-content">
+                        你好！我是你的 AI 语音助手。你可以直接输入文字，或点击下方麦克风按钮进行语音输入。
+                    </div>
+                </div>
+            `;
+        });
+
+        // 清空对话按钮
+        document.getElementById('clearHistoryButton').addEventListener('click', () => {
+            chatContainer.innerHTML = `
+                <div class="message ai-message">
+                    <div class="message-content">
+                        对话已清空。你可以开始新的对话了。
+                    </div>
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>

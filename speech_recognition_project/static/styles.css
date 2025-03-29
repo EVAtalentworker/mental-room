@@ -328,3 +328,23 @@ body {
 .home-btn:hover {
     background: rgba(255, 255, 255, 0.1);
 }
+
+.sidebar-header h3 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.toggle-btn {
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 5px;
+    transition: transform 0.3s ease;
+}
+
+.toggle-btn:hover {
+    transform: scale(1.1);
+}

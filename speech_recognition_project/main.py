@@ -2,6 +2,8 @@ import speech_recognition as sr
 import pyaudio
 import wave
 import os
+import threading
+import pyttsx3  # 添加 pyttsx3 导入
 from datetime import datetime
 from flask import Flask, render_template, jsonify, send_from_directory, request  # 添加 request 导入
 from run import chat, history
@@ -11,6 +13,23 @@ speech_recognizer = None
 current_stream = None
 current_audio = None
 frames = []
+
+# 初始化语音引擎
+engine = pyttsx3.init()
+# 设置中文语音（如果有的话）
+voices = engine.getProperty('voices')
+for voice in voices:
+    if 'chinese' in voice.name.lower():
+        engine.setProperty('voice', voice.id)
+        break
+
+# 设置语音属性
+engine.setProperty('rate', 180)    # 语速
+engine.setProperty('volume', 1.0)  # 音量
+
+def speak_text(text):
+    engine.say(text)
+    engine.runAndWait()
 
 class SpeechRecognizer:
     def __init__(self):
@@ -109,25 +128,38 @@ def start_recording():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/chat', methods=['POST'])
+def chat_endpoint():
+    try:
+        data = request.get_json()
+        message = data.get('message', '')
+        is_voice_mode = data.get('isVoiceMode', False)
+        
+        response = chat(message, history)
+        
+        if is_voice_mode:
+            # 在新线程中播放语音，避免阻塞响应
+            threading.Thread(target=speak_text, args=(response,)).start()
+            
+        return jsonify({'success': True, 'response': response})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/stop_recording', methods=['POST'])
 def stop_recording():
     global speech_recognizer
     try:
         audio_file = speech_recognizer.stop_recording()
         text = speech_recognizer.transcribe_audio(audio_file)
-        # 将语音识别结果发送给 AI 进行对话
+        is_voice_mode = request.json.get('isVoiceMode', False)
+        
         response = chat(text, history)
+        
+        if is_voice_mode:
+            # 在新线程中播放语音，避免阻塞响应
+            threading.Thread(target=speak_text, args=(response,)).start()
+            
         return jsonify({'success': True, 'text': text, 'response': response})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
-@app.route('/chat', methods=['POST'])
-def chat_endpoint():
-    try:
-        data = request.get_json()
-        message = data.get('message', '')
-        response = chat(message, history)
-        return jsonify({'success': True, 'response': response})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 

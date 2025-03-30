@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI 问答</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/qa.css') }}">
 </head>
 <body>
     <!-- 顶部导航栏 -->
@@ -25,8 +26,9 @@
         <button id="newChatButton" class="new-chat-btn">新对话</button>
         <button id="clearHistoryButton" class="clear-chat-btn">清空对话</button>
         <div class="history-divider">历史记录</div>
-        
-        <!-- 添加返回主页按钮 -->
+        <div class="chat-list" id="chatList">
+            <!-- 对话列表将通过 JavaScript 动态生成 -->
+        </div>
         <a href="{{ url_for('index') }}" class="home-btn">返回主页</a>
     </div>
 
@@ -66,144 +68,8 @@
         </div>
     </div>
 
-    <!-- 在 script 部分添加以下代码 -->
-    <script>
-        const recordButton = document.getElementById('recordButton');
-        const chatForm = document.getElementById('chatForm');
-        const textInput = document.getElementById('textInput');
-        const chatContainer = document.getElementById('chat-container');
-        let isRecording = false;
-        let isVoiceMode = false;  // 添加模式标志
-        
-        // 更新切换按钮处理程序
-        const toggleButton = document.getElementById('toggleChatType');
-        const chatTypeText = document.getElementById('chatTypeText');
-
-        function addMessage(text, isUser = false) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
-            messageDiv.innerHTML = `<div class="message-content">${text}</div>`;
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        toggleButton.addEventListener('click', () => {
-            isVoiceMode = !isVoiceMode;
-            if (isVoiceMode) {
-                toggleButton.textContent = '🔈';
-                chatTypeText.textContent = '语音对话';
-            } else {
-                toggleButton.textContent = '📕';
-                chatTypeText.textContent = '文字对话';
-            }
-        });
-
-        // 处理文本输入
-        chatForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const text = textInput.value.trim();
-            if (!text) return;
-
-            addMessage(text, true);
-            textInput.value = '';
-
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        message: text,
-                        isVoiceMode: isVoiceMode
-                    })
-                });
-                
-                const data = await response.json();
-                if (data.success) {
-                    addMessage(data.response);
-                } else {
-                    throw new Error(data.error);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                addMessage('发生错误，请重试');
-            }
-        });
-
-        // 处理语音输入
-        recordButton.addEventListener('click', async () => {
-            if (!isRecording) {
-                // 开始录音
-                isRecording = true;
-                recordButton.classList.add('recording');
-                
-                try {
-                    const response = await fetch('/start_recording', {
-                        method: 'POST'
-                    });
-                    const data = await response.json();
-                    
-                    if (!data.success) {
-                        throw new Error(data.error);
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    addMessage('录音出错，请重试');
-                    recordButton.classList.remove('recording');
-                    isRecording = false;
-                }
-            } else {
-                // 停止录音
-                try {
-                    const response = await fetch('/stop_recording', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            isVoiceMode: isVoiceMode
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    if (data.success) {
-                        addMessage(data.text, true);
-                        addMessage(data.response);
-                    } else {
-                        throw new Error(data.error);
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    addMessage('识别出错，请重试');
-                } finally {
-                    recordButton.classList.remove('recording');
-                    isRecording = false;
-                }
-            }
-        });
-
-        // 新对话按钮
-        document.getElementById('newChatButton').addEventListener('click', () => {
-            chatContainer.innerHTML = `
-                <div class="message ai-message">
-                    <div class="message-content">
-                        你好！我是你的 AI 语音助手。你可以直接输入文字，或点击下方麦克风按钮进行语音输入。
-                    </div>
-                </div>
-            `;
-        });
-
-        // 清空对话按钮
-        document.getElementById('clearHistoryButton').addEventListener('click', () => {
-            chatContainer.innerHTML = `
-                <div class="message ai-message">
-                    <div class="message-content">
-                        对话已清空。你可以开始新的对话了。
-                    </div>
-                </div>
-            `;
-        });
-    </script>
+    <!-- 在底部引入外部 JavaScript 文件 -->
+    <script src="{{ url_for('static', filename='js/diary.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/qa.js') }}"></script>
 </body>
 </html>

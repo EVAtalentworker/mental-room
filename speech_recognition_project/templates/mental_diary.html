@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/diary.css') }}">
+    <title>心情日记</title>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="top-navbar">
+        <div class="nav-content">
+            <div class="nav-title">Wegather</div>
+        </div>
+    </div>
+
+    <div class="diary-container">
+        <div class="book">
+            <a href="{{ url_for('index') }}" class="home-btn">×</a>
+            
+            <!-- 当前日记页 -->
+            <div class="diary-page">
+                <h2 class="page-title">今日心情</h2>
+                <div class="mood-flow">
+                    <!-- 心情流程图将通过JavaScript动态生成 -->
+                </div>
+            </div>
+
+            <!-- 历史记录页 -->
+            <div class="history-page">
+                <h2 class="page-title">历史记录</h2>
+                <ul class="history-list">
+                    <!-- 历史记录将通过JavaScript动态生成 -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 在body结束标签前添加 -->
+    <script src="{{ url_for('static', filename='js/qa.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/diary.js') }}"></script>
+    <script>
+        // 确保页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMoodHistory();
+        });
+    </script>
+</body>
+</html>

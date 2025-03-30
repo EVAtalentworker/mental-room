@@ -163,6 +163,10 @@ def stop_recording():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/mental_diary')
+def mental_diary():
+    return render_template('mental_diary.html')
+
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static'),

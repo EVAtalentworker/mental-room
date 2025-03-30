@@ -1,0 +1,297 @@
+.diary-container {
+    display: flex;
+    min-height: 100vh;
+    width: 100vw;  /* 添加这行 */
+    margin: 0;     /* 添加这行 */
+    padding: 0;    /* 添加这行 */
+    background: #f0ead6;
+    position: relative;
+}
+
+.book {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    margin: 0;     /* 添加这行 */
+    background: #fff;
+    box-shadow: 0 0 50px rgba(0,0,0,0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+body {
+    margin: 0;     /* 添加这行 */
+    padding: 0;    /* 添加这行 */
+    overflow: hidden;  /* 添加这行 */
+}
+
+.diary-page, .history-page {
+    flex: 1;  /* 改为 flex: 1，让两边平均分配空间 */
+    width: 50%;  /* 添加固定宽度 */
+    padding: 40px;
+    overflow-y: auto;
+}
+
+.diary-page, .history-page {
+    flex: 0 0 50%;  /* 确保每个部分固定占50% */
+    padding: 40px;
+    overflow-y: auto;
+    position: relative;
+    background-image: 
+        linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px),
+        linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.diary-page {
+    background-color: #fff;
+    background-image: linear-gradient(to right, #fff 95%, #eee 100%);
+}
+
+.history-page {
+    background-color: #fff;
+    background-image: linear-gradient(to left, #fff 95%, #eee 100%);
+}
+
+/* 调整内容区域的边距和大小 */
+.mood-flow, .history-list {
+    margin: 15px 0;
+    padding: 15px;
+}
+
+/* 确保内容不会溢出 */
+.mood-item, .history-item {
+    max-width: 100%;
+    word-wrap: break-word;
+}
+
+/* 书脊效果 */
+.book::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: rgba(0,0,0,0.1);
+    box-shadow: 1px 0 3px rgba(0,0,0,0.1);
+}
+
+.diary-page {
+    flex: 1;
+    padding: 60px;
+    background: linear-gradient(to right, #fff 95%, #eee 100%);
+    overflow-y: auto;
+    position: relative;
+}
+
+.history-page {
+    flex: 1;
+    padding: 60px;
+    background: linear-gradient(to left, #fff 95%, #eee 100%);
+    overflow-y: auto;
+}
+
+.page-title {
+    font-family: "楷体", KaiTi, serif;
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 30px;
+    text-align: center;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 15px;
+}
+
+.mood-flow {
+    margin: 20px 0;
+    padding: 20px;
+    background: #fafafa;
+    border-radius: 10px;
+    min-height: 300px;
+}
+
+.mood-item {
+    display: flex;
+    align-items: center;
+    margin: 15px 0;
+    padding: 15px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-left: 3px solid #1e90ff;
+}
+
+.mood-time {
+    font-size: 14px;
+    color: #666;
+    margin-right: 20px;
+    font-family: "楷体", KaiTi, serif;
+}
+
+.mood-text {
+    color: #333;
+    font-size: 16px;
+    line-height: 1.6;
+    font-family: "楷体", KaiTi, serif;
+    flex: 1;  /* 让文本占据剩余空间 */
+}
+
+.history-list {
+    list-style: none;
+    padding: 0;
+}
+
+.history-item {
+    padding: 20px;
+    margin: 15px 0;
+    background: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid #eee;
+}
+
+.history-item:hover {
+    transform: translateX(-5px);
+    border-color: #1e90ff;
+}
+
+.history-date {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 8px;
+    font-family: "楷体", KaiTi, serif;
+}
+
+.history-summary {
+    font-size: 14px;
+    color: #666;
+}
+
+.active {
+    background: #f0f7ff;
+    border-left: 3px solid #1e90ff;
+}
+
+.home-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #666;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.home-btn:hover {
+    background: #f0f0f0;
+    transform: rotate(90deg);
+}
+
+/* 添加纸张纹理效果 */
+.diary-page, .history-page {
+    background-image: 
+        linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px),
+        linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* 自定义滚动条 */
+.diary-page::-webkit-scrollbar,
+.history-page::-webkit-scrollbar {
+    width: 8px;
+}
+
+.diary-page::-webkit-scrollbar-track,
+.history-page::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.diary-page::-webkit-scrollbar-thumb,
+.history-page::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.diary-page::-webkit-scrollbar-thumb:hover,
+.history-page::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.history-mood-item {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+    padding: 5px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.history-mood-item .mood-time {
+    font-size: 12px;
+    color: #888;
+    margin-right: 10px;
+}
+
+.history-mood-item .mood-text {
+    flex: 1;
+    margin-right: 10px;
+}
+
+.history-mood-item .delete-mood {
+    opacity: 0;
+    border: none;
+    background: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 5px;
+    transition: all 0.3s ease;
+}
+
+.history-mood-item:hover .delete-mood {
+    opacity: 1;
+}
+
+.history-mood-item .delete-mood:hover {
+    color: #ff4d4f;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.delete-day {
+    opacity: 0;
+    border: none;
+    background: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0 8px;
+    transition: all 0.3s ease;
+}
+
+.history-item:hover .delete-day {
+    opacity: 1;
+}
+
+.delete-day:hover {
+    color: #ff4d4f;
+}
+
+.history-content {
+    margin-top: 10px;
+}

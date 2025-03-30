@@ -10,14 +10,15 @@
 <body>
     <!-- 顶部导航栏 -->
     <div class="top-navbar">
+        <!-- 在导航栏内容中添加按钮 -->
         <div class="nav-content">
-            <div class="nav-title">Wegather</div>
+            <a href="{{ url_for('index') }}" class="nav-title">Wegather</a>
+            <a href="/qa" class="diary-btn" title="AI对话">🗣️</a>
         </div>
     </div>
 
     <div class="diary-container">
         <div class="book">
-            <a href="{{ url_for('index') }}" class="home-btn">×</a>
             
             <!-- 当前日记页 -->
             <div class="diary-page">

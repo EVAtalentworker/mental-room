@@ -10,8 +10,10 @@
 <body>
     <!-- 顶部导航栏 -->
     <div class="top-navbar">
+        <!-- 在导航栏内容中添加按钮 -->
         <div class="nav-content">
-            <div class="nav-title">Wegather</div>
+            <a href="{{ url_for('index') }}" class="nav-title">Wegather</a>
+            <a href="/mental_diary" class="diary-btn" title="心情日记">📓</a>
         </div>
     </div>
 
@@ -29,7 +31,7 @@
         <div class="chat-list" id="chatList">
             <!-- 对话列表将通过 JavaScript 动态生成 -->
         </div>
-        <a href="{{ url_for('index') }}" class="home-btn">返回主页</a>
+ 
     </div>
 
     <div class="main-content">
@@ -71,5 +73,6 @@
     <!-- 在底部引入外部 JavaScript 文件 -->
     <script src="{{ url_for('static', filename='js/diary.js') }}"></script>
     <script src="{{ url_for('static', filename='js/qa.js') }}"></script>
+
 </body>
 </html>

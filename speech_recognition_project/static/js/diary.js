@@ -67,27 +67,18 @@ function updateHistoryList() {
                 <div class="history-date">${day.date}</div>
                 <button class="delete-day" title="删除这一天的记录">×</button>
             </div>
-            <div class="history-content">
-                ${day.moods.map((mood) => `
-                    <div class="history-mood-item">
-                        <span class="mood-time">${mood.time}</span>
-                        <span class="mood-text">${mood.text}</span>
-                    </div>
-                `).join('')}
+            <div class="history-summary">
+                共记录 ${day.moods.length} 条心情
             </div>
         `;
         
         // 为删除按钮添加事件监听器
         li.querySelector('.delete-day').addEventListener('click', (e) => {
-            e.stopPropagation(); // 阻止事件冒泡
-            // 删除这一天的记录
+            e.stopPropagation();
             moodHistory.splice(index, 1);
-            
-            // 保存并更新显示
             saveMoodHistory();
             updateHistoryList();
             
-            // 如果还有记录，显示最新的一天
             if (moodHistory.length > 0) {
                 showDayMood(moodHistory.length - 1);
             } else {
@@ -170,22 +161,32 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadMoodHistory() {
         const stored = localStorage.getItem('moodHistory');
         const chatList = document.querySelector('.history-list');
+        const todayTitle = document.querySelector('.diary-page .page-title');
         
-        // 如果不在日记页面，直接返回
         if (!chatList) return;
         
         if (stored) {
             moodHistory = JSON.parse(stored);
             moodHistory = moodHistory.slice(-5);
+            updateHistoryList();
+            
+            // 默认显示今天的记录
+            const today = new Date().toLocaleDateString();
+            const todayIndex = moodHistory.findIndex(day => day.date === today);
+            
+            if (todayIndex !== -1) {
+                showDayMood(todayIndex);
+            } else if (moodHistory.length > 0) {
+                showDayMood(moodHistory.length - 1);
+            }
         }
-        updateHistoryList();
+        
+        // 确保标题显示正确
+        if (todayTitle) {
+            todayTitle.textContent = '今日心情';
+        }
     }
 
-    // 如果有今天的记录，显示今天的记录
-    if (moodHistory.length > 0) {
-        showDayMood(moodHistory.length - 1);
-    }
-    // 只在日记页面才初始化
     if (document.querySelector('.diary-container')) {
         loadMoodHistory();
     }

@@ -228,24 +228,6 @@
     transform: scale(1.1);
 }
 
-.home-btn {
-    margin-top: auto;
-    background: transparent;
-    color: #ffffff;
-    text-decoration: none;
-    padding: 12px;
-    border-radius: 6px;
-    text-align: center;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    margin-top: auto;
-}
-
-.home-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-}
-
 .chat-list {
     overflow-y: auto;
     flex-grow: 1;
@@ -291,4 +273,45 @@
 
 .chat-item:hover .delete-chat {
     opacity: 1;
+}
+
+/* 在 input-container 样式附近添加 */
+/* 修改日记按钮样式 */
+.diary-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #666;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin-left: auto;  /* 将按钮推到导航栏右侧 */
+    padding: 8px;
+    cursor: pointer;
+}
+
+.diary-btn:hover {
+    transform: scale(1.1);
+    color: #10a37f;
+}
+
+/* 确保导航栏内容正确对齐 */
+.nav-content {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.nav-title {
+    color: #333;
+    text-decoration: none;
+    font-size: 20px;
+    font-weight: 500;  /* 减小字重 */
+    transition: all 0.3s ease;
+}
+
+.nav-title:hover {
+    color: #0662be;
+    transform: scale(1.05);
 }

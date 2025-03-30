@@ -166,35 +166,23 @@ body {
 .history-summary {
     font-size: 14px;
     color: #666;
+    margin-top: 5px;
+    font-family: "楷体", KaiTi, serif;
+}
+
+.history-item {
+    padding: 15px;
+    margin: 10px 0;
+    background: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid #eee;
 }
 
 .active {
     background: #f0f7ff;
     border-left: 3px solid #1e90ff;
-}
-
-.home-btn {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.9);
-    border: 1px solid #ddd;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    color: #666;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    z-index: 1000;
-}
-
-.home-btn:hover {
-    background: #f0f0f0;
-    transform: rotate(90deg);
 }
 
 /* 添加纸张纹理效果 */
@@ -294,4 +282,63 @@ body {
 
 .history-content {
     margin-top: 10px;
+}
+
+/* 添加顶部导航栏样式 */
+/* 修改导航栏样式 */
+.top-navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    z-index: 1000;
+    padding: 0 20px;  /* 添加左右内边距 */
+}
+
+.nav-content {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.nav-title {
+    color: #333;
+    text-decoration: none;
+    font-size: 20px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    margin-left: 5px;  /* 保持一致的左边距 */
+}
+
+.nav-title:hover {
+    color: #0662be;
+    transform: scale(1.05);
+}
+
+/* 调整主容器的上边距 */
+.diary-container {
+    padding-top: 60px;
+    margin-top: 0;  /* 确保没有额外的边距 */
+}
+
+.diary-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: #666;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin-left: auto;
+    padding: 8px;
+    cursor: pointer;
+}
+
+.diary-btn:hover {
+    transform: scale(1.1);
+    color: #10a37f;
 }

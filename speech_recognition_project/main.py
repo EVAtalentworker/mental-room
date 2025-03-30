@@ -27,9 +27,19 @@ for voice in voices:
 engine.setProperty('rate', 180)    # 语速
 engine.setProperty('volume', 1.0)  # 音量
 
+# 修改 speak_text 函数
 def speak_text(text):
-    engine.say(text)
-    engine.runAndWait()
+    try:
+        engine.say(text)
+        engine.runAndWait()
+    except RuntimeError:
+        # 如果运行循环已经启动，先停止它
+        engine.endLoop()
+        # 重新初始化引擎
+        engine.say(text)
+        engine.runAndWait()
+    except Exception as e:
+        print(f"语音播放错误: {str(e)}")
 
 class SpeechRecognizer:
     def __init__(self):

@@ -129,6 +129,10 @@ def index():
 def qa():
     return render_template('qa.html')
 
+@app.route('/mood_analysis')
+def mood_analysis():
+    return render_template('mood_analysis.html')
+
 @app.route('/start_recording', methods=['POST'])
 def start_recording():
     global speech_recognizer

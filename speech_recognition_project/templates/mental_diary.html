@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/diary.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mood_analysis.css') }}">
     <title>心情日记</title>
 </head>
 <body>
@@ -13,6 +14,7 @@
         <!-- 在导航栏内容中添加按钮 -->
         <div class="nav-content">
             <a href="{{ url_for('index') }}" class="nav-title">Wegather</a>
+            <a href="/mood_analysis" class="mood_analysis-btn" title="心情分析">🤔</a>
             <a href="/qa" class="diary-btn" title="AI对话">🗣️</a>
         </div>
     </div>
@@ -41,6 +43,7 @@
     <!-- 在body结束标签前添加 -->
     <script src="{{ url_for('static', filename='js/qa.js') }}"></script>
     <script src="{{ url_for('static', filename='js/diary.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/mood_analysis.js') }}"></script>
     <script>
         // 确保页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', () => {

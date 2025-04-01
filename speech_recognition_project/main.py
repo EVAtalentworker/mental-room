@@ -7,6 +7,38 @@ import pyttsx3  # 添加 pyttsx3 导入
 from datetime import datetime
 from flask import Flask, render_template, jsonify, send_from_directory, request  # 添加 request 导入
 from run import chat, history
+from snownlp import SnowNLP
+
+def detect_dangerous_mood(text):
+    danger_words = [
+        '自杀', '跳楼', '结束生命', '死', '解脱',
+        '活不下去', '没有希望', '放弃', '绝望',
+        '伤害自己', '割腕', '吃药'
+    ]
+    
+    s = SnowNLP(text)
+    # 所有危险词都需要通过情感分析验证
+    for word in danger_words:
+        if word in text and s.sentiments < 0.1:
+            return {
+                'is_dangerous': True,
+                'type': 'immediate_danger',
+                'keyword': word
+            }
+    
+    # 纯情感分析作为补充检测
+    if s.sentiments < 0.1:
+        return {
+            'is_dangerous': True,
+            'type': 'severe_negative',
+            'sentiment_score': s.sentiments
+        }
+    
+    return {
+        'is_dangerous': False,
+        'type': 'normal',
+        'sentiment_score': s.sentiments
+    }
 
 app = Flask(__name__)
 speech_recognizer = None
@@ -149,13 +181,26 @@ def chat_endpoint():
         message = data.get('message', '')
         is_voice_mode = data.get('isVoiceMode', False)
         
-        response = chat(message, history)
+        # 检测危险信息
+        danger_check = detect_dangerous_mood(message)
+        
+        # 如果检测到危险信息，修改回复内容
+        if danger_check['is_dangerous']:
+            if danger_check['type'] == 'immediate_danger':
+                response = f"我注意到你提到了'{danger_check['keyword']}'，我很担心你。请记住，生命可贵，如果你需要帮助，可以拨打全国心理援助热线：400-161-9995。让我们聊聊你现在的感受，好吗？"
+            else:
+                response = "我感觉你现在的心情不太好。记住，无论遇到什么困难，都会过去的。如果需要倾诉，我随时在这里。要不要告诉我发生了什么？"
+        else:
+            response = chat(message, history)
         
         if is_voice_mode:
-            # 在新线程中播放语音，避免阻塞响应
             threading.Thread(target=speak_text, args=(response,)).start()
             
-        return jsonify({'success': True, 'response': response})
+        return jsonify({
+            'success': True, 
+            'response': response,
+            'danger_detected': danger_check['is_dangerous']
+        })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 

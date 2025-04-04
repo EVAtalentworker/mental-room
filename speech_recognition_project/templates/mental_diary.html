@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/diary.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/mood_analysis.css') }}">
     <title>心情日记</title>
 </head>
 <body>
     <!-- 顶部导航栏 -->
     <div class="top-navbar">
-        <!-- 在导航栏内容中添加按钮 -->
         <div class="nav-content">
             <a href="{{ url_for('index') }}" class="nav-title">Wegather</a>
             <div class="nav-right">
@@ -28,35 +26,24 @@
     </div>
 
     <div class="diary-container">
-        <div class="book">
-            
-            <!-- 当前日记页 -->
-            <div class="diary-page">
-                <h2 class="page-title">今日心情</h2>
-                <div class="mood-flow">
-                    <!-- 心情流程图将通过JavaScript动态生成 -->
+        <div class="diary-editor">
+            <div class="editor-header">
+                <div class="diary-popup-container">
+                    <button class="diary-icon-btn" id="diary-popup-btn">📓</button>
+                    <div class="diary-popup" id="diary-popup">
+                        <!-- 日记列表将通过 JavaScript 动态生成 -->
+                    </div>
                 </div>
+                <button class="diary-icon-btn" id="add-diary-btn">＋</button>
             </div>
-
-            <!-- 历史记录页 -->
-            <div class="history-page">
-                <h2 class="page-title">历史记录</h2>
-                <ul class="history-list">
-                    <!-- 历史记录将通过JavaScript动态生成 -->
-                </ul>
+            <div class="editor-content" contenteditable="true">
+                <!-- 移除重复的 diary-section，由 JavaScript 动态生成 -->
             </div>
         </div>
     </div>
+ 
+    </div>
 
-    <!-- 在body结束标签前添加 -->
-    <script src="{{ url_for('static', filename='js/qa.js') }}"></script>
     <script src="{{ url_for('static', filename='js/diary.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/mood_analysis.js') }}"></script>
-    <script>
-        // 确保页面加载完成后初始化
-        document.addEventListener('DOMContentLoaded', () => {
-            loadMoodHistory();
-        });
-    </script>
 </body>
 </html>

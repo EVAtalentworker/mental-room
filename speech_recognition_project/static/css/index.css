@@ -1,0 +1,133 @@
+.index-body {
+    background: linear-gradient(135deg, #1e90ff, #00bfff);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.logo {
+    position: absolute;
+    top: 30px;
+    left: 40px;
+    font-size: 32px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+}
+
+/* 对话部分的css文件 */
+.floating-bubble {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 30px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    animation: float 6s ease-in-out infinite;
+    max-width: 400px;
+    width: 90%;
+    transform: translateX(-100%);
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-20px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+
+.bubble-content {
+    text-align: center;
+}
+
+.bubble-content h2 {
+    color: #1e90ff;
+    font-size: 28px;
+    margin-bottom: 15px;
+}
+
+.bubble-content p {
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 16px;
+}
+
+.bubble-btn {
+    background: #1e90ff;
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 25px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(30,144,255,0.3);
+}
+
+.bubble-btn:hover {
+    background: #1873cc;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(30,144,255,0.4);
+}
+
+/* 心情日记的css文件 */
+.floating-bubble-dia {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 30px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    animation: float-dia 6s ease-in-out infinite;
+    max-width: 400px;
+    width: 90%;
+    transform: translateX(100%);
+}
+@keyframes float-dia {
+    0% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(20px);
+    }
+    100% {
+        transform: translateY(0px);
+    }
+}
+.bubble-content-dia {
+    text-align: center;
+}
+
+.bubble-content-dia h2 {
+    color: #1e90ff;
+    font-size: 28px;
+    margin-bottom: 15px;
+}
+
+.bubble-content-dia p {
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 16px;
+}
+
+.bubble-btn-dia {
+    background: #1e90ff;
+    color: white;
+    border: none;
+    padding: 15px 40px;
+    border-radius: 25px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(30,144,255,0.3);
+}
+
+.bubble-btn-dia:hover {
+    background: #1873cc;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(30,144,255,0.4);
+}

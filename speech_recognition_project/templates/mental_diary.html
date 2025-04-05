@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/diary.css') }}">
+    <title>心情日记</title>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <div class="top-navbar">
+        <div class="nav-content">
+            <a href="{{ url_for('index') }}" class="nav-title">Wegather</a>
+            <div class="nav-right">
+                <div class="settings-dropdown">
+                    <button class="settings-btn" title="设置">⚙</button>
+                    <div class="dropdown-content">
+                        <a href="/qa">AI对话 🗣️</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="diary-container">
+        <div class="diary-editor">
+            <div class="editor-header">
+                <div class="diary-popup-container">
+                    <button class="diary-icon-btn" id="diary-popup-btn">📓</button>
+                    <div class="diary-popup" id="diary-popup">
+                        <!-- 日记列表将通过 JavaScript 动态生成 -->
+                    </div>
+                </div>
+                <button class="diary-icon-btn" id="add-diary-btn">＋</button>
+            </div>
+            <div class="editor-content" contenteditable="true">
+                <!-- 移除重复的 diary-section，由 JavaScript 动态生成 -->
+            </div>
+        </div>
+    </div>
+ 
+    </div>
+
+    <script src="{{ url_for('static', filename='js/diary.js') }}"></script>
+</body>
+</html>

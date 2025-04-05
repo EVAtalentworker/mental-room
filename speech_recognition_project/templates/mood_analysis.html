@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据分析</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mood_analysis.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="top-navbar">
+        <div class="nav-content">
+            <a href="{{ url_for('index') }}" class="nav-title">Wegather</a>
+            <div class="nav-right">
+                <button onclick="window.location.href='/qa'" class="qa-btn" title="AI对话">🗣️</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="content-wrapper">
+            <div class="left-bubble">
+                <div class="chart-container">
+                    <canvas id="dangerWordsChart"></canvas>
+                </div>
+            </div>
+            <div class="right-bubble">
+                <h2 class="right-title">数据分析</h2>
+                <div class="status-info">
+                    <div class="status-line">
+                        <span>用户状态：<span id="userStatus" class="status-good">良好</span></span>
+                        <span id="dailyNegativeContainer">日均消极值：<span id="dailyNegative">3.00</span></span>
+                    </div>
+                    <div class="status-message" id="statusMessage"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/mood_analysis.js') }}"></script>
+</body>
+</html>

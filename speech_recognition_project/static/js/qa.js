@@ -270,9 +270,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 const data = await response.json();
                 if (data.success) {
-                    addMessage(data.text, true);
-                    detectMood(data.text);  // 只检测用户的语音输入
-                    addMessage(data.response);
+                    // 将识别的文本填入输入框
+                    textInput.value = data.text;
+                    // 让输入框获得焦点，方便用户编辑
+                    textInput.focus();
+                    // 将光标移动到文本末尾
+                    textInput.setSelectionRange(data.text.length, data.text.length);
                 } else {
                     throw new Error(data.error);
                 }

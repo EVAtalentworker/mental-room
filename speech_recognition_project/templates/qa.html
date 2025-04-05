@@ -13,12 +13,12 @@
         <div class="nav-content">
             <a href="{{ url_for('index') }}" class="nav-title">Wegather</a>
             <div class="nav-right">
+                <!-- 添加数据分析按钮 -->
+                <button onclick="window.location.href='/mood_analysis'" class="analysis-btn" title="数据分析">📊</button>
                 <div class="settings-dropdown">
                     <button class="settings-btn" title="设置">⚙</button>
                     <div class="dropdown-content">
-                        <a href="/qa">AI对话 🗣️</a>
                         <a href="/mental_diary">心情日记 📓</a>
-                        <a href="/mood_analysis">数据分析 📊</a>
                     </div>
                 </div>
             </div>
@@ -79,8 +79,7 @@
     </div>
 
     <!-- 在底部引入外部 JavaScript 文件 -->
-    <script src="{{ url_for('static', filename='js/diary.js') }}"></script>
+    <!-- 移除 diary.js 的引用，因为在 qa 页面不需要它 -->
     <script src="{{ url_for('static', filename='js/qa.js') }}"></script>
-
 </body>
 </html>

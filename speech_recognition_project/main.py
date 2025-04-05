@@ -19,7 +19,7 @@ def detect_dangerous_mood(text):
     s = SnowNLP(text)
     # 所有危险词都需要通过情感分析验证
     for word in danger_words:
-        if word in text and s.sentiments < 0.1:
+        if word in text and s.sentiments < 0.2:
             return {
                 'is_dangerous': True,
                 'type': 'immediate_danger',
@@ -27,7 +27,7 @@ def detect_dangerous_mood(text):
             }
     
     # 纯情感分析作为补充检测
-    if s.sentiments < 0.1:
+    if s.sentiments < 0.2:
         return {
             'is_dangerous': True,
             'type': 'severe_negative',
@@ -210,6 +210,14 @@ def stop_recording():
     try:
         audio_file = speech_recognizer.stop_recording()
         text = speech_recognizer.transcribe_audio(audio_file)
+        
+        # 只返回识别的文本，不直接发送聊天请求
+        return jsonify({
+            'success': True, 
+            'text': text
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
         is_voice_mode = request.json.get('isVoiceMode', False)
         
         response = chat(text, history)

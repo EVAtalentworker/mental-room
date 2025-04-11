@@ -176,28 +176,40 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     // 修改心情关键词检测函数
+    // 添加情绪检测函数
     function detectMood(text) {
-        if (!text) return;
+        // 使用 SnowNLP 的情感分析结果
+        return fetch('/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                message: text,
+                isVoiceMode: false
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            return data.mood_analysis;
+        });
+    }
+    
+    // 添加情绪数据处理函数
+    function addMoodFromQA(text, moodData) {
+        if (!text || !moodData) return;
         
-        for (let mood in moodKeywords) {
-            if (text.includes(mood)) {
-                // 提取包含心情关键词的完整句子
-                const sentences = text.split(/[。！？.!?]/).filter(s => s.trim());
-                for (let sentence of sentences) {
-                    if (sentence.includes(mood)) {
-                        const trimmedSentence = sentence.trim();
-                        console.log('正在尝试添加心情:', trimmedSentence); // 调试信息
-                        
-                        // 确保函数存在后再调用
-                        if (typeof window.addMoodFromQA === 'function') {
-                            window.addMoodFromQA(trimmedSentence);
-                        } else {
-                            console.error('addMoodFromQA 函数未找到');
-                        }
-                    }
-                }
-            }
-        }
+        // 更新情绪统计数据
+        fetch('/save_mood_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                text: text,
+                mood_data: moodData
+            })
+        });
     }
     
     // 修改发送消息的事件处理

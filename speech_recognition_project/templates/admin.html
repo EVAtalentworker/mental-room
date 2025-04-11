@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员 - Wegather</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="admin-body">
+    <!-- 添加 logo 按钮 -->
+    <a href="{{ url_for('index') }}" class="logo-link">
+        <h1 class="logo">Wegather</h1>
+    </a>
+    
+    <div class="admin-container">
+        <div class="upper-section">
+            <!-- 移除固定的用户列表容器 -->
+        </div>
+        <div class="chart-section">
+            <canvas id="userStatsChart"></canvas>
+        </div>
+    </div>
+    <script>
+        const totalUsers = {{ total_users }};
+        const dangerUsers = {{ danger_users }};
+    </script>
+    <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+</body>
+</html>

@@ -8,7 +8,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
 <body class="index-body">
-    <div class="logo">Wegather</div>
+    <!-- logo部分的修改 -->
+    <div class="logo">
+        W<a href="{{ url_for('index') }}" class="logo-a">a</a>gather
+    </div>
     
     <div class="floating-bubble">
         <div class="bubble-content">
@@ -24,5 +27,7 @@
             <button onclick="window.location.href='{{ url_for('mental_diary') }}'" class="bubble-btn-dia">写日记</button>
         </div>
     </div>
+
+    <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 </body>
 </html>

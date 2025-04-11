@@ -16,6 +16,25 @@
     font-weight: bold;
     color: white;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    cursor: default;
+}
+
+.logo-letter {
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.logo-letter:hover {
+    color: #e6e6e6;
+}
+
+.logo-a {
+    text-decoration: none;
+    color: white;
+}
+
+.logo-a:hover {
+    color: #e6e6e6;
 }
 
 /* 对话部分的css文件 */

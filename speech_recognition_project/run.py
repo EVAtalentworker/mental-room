@@ -32,6 +32,26 @@ def loading_animation():
         idx += 1
         time.sleep(0.1)
 
+class ChatHistory:
+    def __init__(self):
+        self.histories = {}  # 用字典存储每个用户的聊天历史
+        
+    def get_history(self, user_id):
+        if user_id not in self.histories:
+            self.histories[user_id] = []
+        return self.histories[user_id]
+        
+    def add_message(self, user_id, message):
+        if user_id not in self.histories:
+            self.histories[user_id] = []
+        self.histories[user_id].append(message)
+        
+    def clear_history(self, user_id):
+        self.histories[user_id] = []
+
+# 创建全局聊天历史管理器
+chat_history = ChatHistory()
+
 def chat(query, history):
     global loading_done
     loading_done = False

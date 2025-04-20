@@ -3,9 +3,8 @@ let lastClickTime = 0;
 
 document.addEventListener('DOMContentLoaded', function() {
     const logo = document.querySelector('.logo');
-    let startX = 0;
     
-    // 创建提示框
+    // 创建提示框函数保持不变
     function createNotification(message) {
         const notification = document.createElement('div');
         notification.style.cssText = `
@@ -35,45 +34,38 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
     }
     
-    logo.addEventListener('mousedown', function(e) {
-        if (e.target.classList.contains('logo-a')) {
-            return;
-        }
-        startX = e.clientX;
-    });
-
+    // 统一处理所有点击事件
     logo.addEventListener('click', async function(e) {
         if (e.target.classList.contains('logo-a')) {
-            return;
-        }
-        try {
-            const response = await fetch('/logout');
-            if (response.ok) {
-                createNotification('已退出登录');
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 1000);
+            e.preventDefault();
+            const currentTime = new Date().getTime();
+            
+            if (currentTime - lastClickTime > 3000) {
+                clickCount = 1;
+            } else {
+                clickCount++;
             }
-        } catch (error) {
-            console.error('退出登录失败:', error);
-            createNotification('退出登录失败，请重试');
+            
+            lastClickTime = currentTime;
+            console.log('Click count:', clickCount); // 添加调试信息
+            
+            if (clickCount === 3) {
+                window.location.href = '/secret';
+                clickCount = 0;
+            }
+        } else {
+            try {
+                const response = await fetch('/logout');
+                if (response.ok) {
+                    createNotification('已退出登录');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error('退出登录失败:', error);
+                createNotification('退出登录失败，请重试');
+            }
         }
     });
 });
-
-document.getElementById('secretButton').addEventListener('click', function(e) {
-        const currentTime = new Date().getTime();
-        
-        if (currentTime - lastClickTime > 5000) {
-            clickCount = 1;
-        } else {
-            clickCount++;
-        }
-        
-        lastClickTime = currentTime;
-        
-        if (clickCount === 3) {
-            window.location.href = '/secret';
-            clickCount = 0;
-        }
-    });

@@ -8,15 +8,13 @@ from datetime import datetime
 from flask import Flask, render_template, jsonify, send_from_directory, request, redirect, url_for, flash  # Add flash here
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from models import db, User
-from werkzeug.security import generate_password_hash, check_password_hash
 from run import chat, history
 from snownlp import SnowNLP
 import json
-from collections import Counter
-import os
-import json
 import random
 from flask_migrate import Migrate
+from datetime import datetime, timedelta
+from models import db, User, Symptom, UserSymptom, Solution
 
 def load_knowledge_base():
     kb_path = 'knowledge_base/mental_health_kb.json'
@@ -103,14 +101,44 @@ def detect_dangerous_mood(text):
             if kb_response:
                 kb_responses.append(kb_response)
     
+    # 添加隐患特征检测
+    risk_patterns = {
+        'behavior_changes': [
+            '睡眠变化', '食欲改变', '不想吃饭', '睡不着', '总是睡觉',
+            '情绪波动', '暴躁', '易怒', '心情起伏', 
+            '不想社交', '不想见人', '退出社团', '不参加活动',
+            '成绩下降', '工作效率低', '无法集中注意力'
+        ],
+        'cognitive_changes': [
+            '记忆力差', '思维混乱', '无法思考', '注意力不集中',
+            '对声音敏感', '对光敏感', '感觉不真实', 
+            '失去动力', '提不起劲', '没有兴趣'
+        ],
+        'social_changes': [
+            '旷课', '旷工', '人际关系', '同事关系', '同学关系',
+            '觉得被监视', '觉得被跟踪', '觉得不安全'
+        ]
+    }
+    
+    # 检查隐患特征
+    risk_found = False
+    for category, patterns in risk_patterns.items():
+        for pattern in patterns:
+            if pattern in text:
+                risk_found = True
+                break
+        if risk_found:
+            break
+    
     return {
         'is_dangerous': response_type != 'normal',
+        'is_risk': risk_found,  # 添加隐患标记
         'type': response_type,
         'sentiment_score': s.sentiments,
         'found_keywords': found_keywords,
         'categories': list(set(item['category'] for item in found_keywords)),
         'kb_responses': kb_responses,
-        'is_severe': response_type == 'severe_danger'  # 新增严重危险标记
+        'is_severe': response_type == 'severe_danger'
     }
 app = Flask(__name__)
 speech_recognizer = None
@@ -262,15 +290,12 @@ def start_recording():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
-# 添加保存数据的函数
-# 在文件开头添加所需的导入
-from datetime import datetime, timedelta
-
 # 修改保存数据的函数
-def save_mood_data(text, sentiment_score, user_id):
+def save_mood_data(text, sentiment_score, user_id=None):
     try:
-        # 为每个用户创建独立的数据文件
-        data_file = f'static/data/mood_data_{user_id}.json'
+        data_file = 'static/data/mood_data.json'
+        if user_id:
+            data_file = f'static/data/mood_data_{user_id}.json'
         
         data = {
             'dangerous_words': {},
@@ -313,22 +338,41 @@ def save_mood_data(text, sentiment_score, user_id):
         print(f"保存数据时出错: {str(e)}")
 
 @app.route('/chat', methods=['POST'])
+@login_required
 def chat_endpoint():
     try:
         data = request.get_json()
         message = data.get('message', '')
         is_voice_mode = data.get('isVoiceMode', False)
         
-        # 保存心情数据
-        save_mood_data(message, None)
+        # 检查用户是否登录
+        if not current_user.is_authenticated:
+            return jsonify({
+                'success': False,
+                'error': '请先登录'
+            })
+        
+        # 使用全局历史记录
+        response = chat(message, history)
         
         # 检测危险信息
         danger_check = detect_dangerous_mood(message)
         
-        # 如果检测到严重危险词，更新用户状态
-        if danger_check['is_severe'] and current_user.is_authenticated:
-            current_user.has_danger_words = True
+        # 更新用户状态
+        if danger_check['is_dangerous'] or danger_check['is_severe']:
+            user = User.query.get(current_user.id)
+            user.has_danger_words = True
+            db.session.add(user)
             db.session.commit()
+        elif danger_check['is_risk']:  # 添加隐患检查
+            user = User.query.get(current_user.id)
+            user.has_risk_signs = True
+            db.session.add(user)
+            db.session.commit()
+            print(f"用户 {user.username} 已被标记为危险用户") # 添加调试信息
+        
+        # 保存心情数据
+        save_mood_data(message, None, current_user.id)
         
         # 根据不同类型的症状提供相应的回复
         if danger_check['is_dangerous']:
@@ -340,7 +384,7 @@ def chat_endpoint():
             elif danger_check['type'] == 'immediate_danger':
                 response = f"我注意到你提到了一些令人担忧的话..."
             elif danger_check['type'] == 'multiple_symptoms':
-                response = "我感觉你最近的状态不太好，可能遇到了一些困扰。记住，这些感受都是暂时的，如果你愿意，我们可以一起探讨这些问题，或者建议你寻求专业的心理咨询帮助。"
+                response = "感觉到你最近的状态不太好，可能遇到了一些困扰。记住，这些感受都是暂时的，如果你愿意，我们可以一起探讨这些问题，或者建议你寻求专业的心理咨询帮助。"
             else:
                 response = "我理解你现在的心情可能不太好。有时候和别人分享这些感受，会让自己感觉好一些。要不要告诉我具体发生了什么？"
         else:
@@ -376,22 +420,10 @@ def stop_recording():
         audio_file = speech_recognizer.stop_recording()
         text = speech_recognizer.transcribe_audio(audio_file)
         
-        # 只返回识别的文本，不直接发送聊天请求
         return jsonify({
             'success': True, 
             'text': text
         })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-        is_voice_mode = request.json.get('isVoiceMode', False)
-        
-        response = chat(text, history)
-        
-        if is_voice_mode:
-            # 在新线程中播放语音，避免阻塞响应
-            threading.Thread(target=speak_text, args=(response,)).start()
-            
-        return jsonify({'success': True, 'text': text, 'response': response})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
@@ -443,9 +475,10 @@ def get_mood_statistics():
         })
 
 @app.route('/clear_mood_statistics', methods=['POST'])
+@login_required
 def clear_mood_statistics():
     try:
-        data_file = 'static/data/mood_data.json'
+        data_file = f'static/data/mood_data_{current_user.id}.json'
         # 重置数据为空
         empty_data = {
             'dangerous_words': {},
@@ -453,6 +486,7 @@ def clear_mood_statistics():
             'negative_sentences': []
         }
         
+        os.makedirs(os.path.dirname(data_file), exist_ok=True)
         with open(data_file, 'w', encoding='utf-8') as f:
             json.dump(empty_data, f, ensure_ascii=False, indent=2)
             
@@ -467,7 +501,7 @@ def save_mood_data_endpoint():
         text = data.get('text', '')
         mood_data = data.get('mood_data', {})
         
-        # 调用现有的保存函数
+        # 调用现有的保存函数，添加默认的 user_id 参数
         save_mood_data(text, mood_data.get('sentiment_score'))
         
         return jsonify({'success': True})
@@ -519,7 +553,7 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
-# 数据库配置（移到这里）
+# 数据库配置
 app.config['SECRET_KEY'] = 'your-secret-key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -537,26 +571,118 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# 将这个路由移到其他路由的位置（在 app 定义之后，在 if __name__ == '__main__' 之前）
 @app.route('/get_users')
 def get_users():
     user_type = request.args.get('type', 'all')
     if user_type == 'danger':
         users = User.query.filter_by(has_danger_words=True).all()
+    elif user_type == 'risk':  # 添加隐患用户查询
+        users = User.query.filter_by(has_risk_signs=True).all()
     else:
         users = User.query.all()
     return jsonify([{'username': user.username} for user in users])
 
+@app.route('/get_user_details/<username>')
+def get_user_details(username):
+    user = User.query.filter_by(username=username).first()
+    if not user:
+        return jsonify({'error': '用户不存在'}), 404
+        
+    # 获取用户的症状记录
+    user_symptoms = UserSymptom.query.filter_by(user_id=user.id).all()
+    symptoms = []
+    solutions = []
+    
+    for user_symptom in user_symptoms:
+        symptom = Symptom.query.get(user_symptom.symptom_id)
+        if symptom:
+            symptoms.append({
+                'name': symptom.name,
+                'frequency': user_symptom.frequency
+            })
+            # 获取该症状的解决方案
+            symptom_solutions = get_solutions(symptom.id)
+            solutions.extend(symptom_solutions)
+    
+    return jsonify({
+        'username': username,
+        'symptoms': symptoms,
+        'solutions': list(set(solutions))  # 去重
+    })
+
 if __name__ == "__main__":
     with app.app_context():
         try:
-            # 创建数据库表
+            # 只创建不存在的表，不删除现有数据
             db.create_all()
-            # 添加 has_danger_words 列
-            with db.engine.connect() as conn:
-                conn.execute('ALTER TABLE user ADD COLUMN has_danger_words BOOLEAN DEFAULT FALSE')
         except Exception as e:
             print(f"数据库更新错误: {str(e)}")
             
     speech_recognizer = SpeechRecognizer()
     app.run(debug=True)
+
+
+def identify_symptoms(text, user_id):
+    # 症状模式匹配字典
+    symptom_patterns = {
+        '抑郁症状': [
+            '情绪低落', '兴趣减退', '睡眠问题', '疲劳', '无价值感',
+            '注意力难以集中', '食欲改变', '自责', '绝望'
+        ],
+        '焦虑症状': [
+            '紧张', '担心', '坐立不安', '易怒', '注意力难以集中',
+            '肌肉紧张', '睡眠障碍', '心悸', '出汗'
+        ],
+        '社交恐惧': [
+            '社交回避', '害怕与人交往', '社交场合紧张', '担心被评判',
+            '公众场合焦虑', '回避眼神接触'
+        ],
+        '强迫症状': [
+            '反复检查', '重复行为', '侵入性想法', '清洁强迫',
+            '对称需求', '计数行为'
+        ]
+    }
+
+    detected_symptoms = []
+    
+    # 检查文本中的症状
+    for symptom_type, patterns in symptom_patterns.items():
+        for pattern in patterns:
+            if pattern in text:
+                # 查找或创建症状记录
+                symptom = Symptom.query.filter_by(name=symptom_type).first()
+                if not symptom:
+                    symptom = Symptom(name=symptom_type)
+                    db.session.add(symptom)
+                
+                # 记录用户症状
+                user_symptom = UserSymptom.query.filter_by(
+                    user_id=user_id,
+                    symptom_id=symptom.id
+                ).first()
+                
+                if user_symptom:
+                    user_symptom.frequency += 1
+                else:
+                    user_symptom = UserSymptom(
+                        user_id=user_id,
+                        symptom_id=symptom.id
+                    )
+                    db.session.add(user_symptom)
+                
+                detected_symptoms.append({
+                    'type': symptom_type,
+                    'pattern': pattern
+                })
+    
+    if detected_symptoms:
+        db.session.commit()
+    
+    return detected_symptoms
+
+def get_solutions(symptom_id):
+    """获取针对特定症状的解决方案"""
+    solutions = Solution.query.filter_by(symptom_id=symptom_id)\
+        .order_by(Solution.priority.desc())\
+        .all()
+    return [solution.content for solution in solutions]

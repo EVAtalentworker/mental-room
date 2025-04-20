@@ -56,10 +56,15 @@ h2 {
 }
 
 .user-item {
-    padding: 8px 0;
+    padding: 8px 15px;
     font-size: 14px;
     color: #666;
-    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.user-item:hover {
+    color: #1e90ff;
 }
 
 .user-item:last-child {
@@ -97,4 +102,113 @@ h2 {
 
 .logo:hover {
     transform: scale(1.05);
+}
+
+/* 添加隐患用户样式 */
+.risk-users {
+    background-color: #FFD700;  /* 黄色 */
+    cursor: pointer;
+}
+
+.chart-bar {
+    position: relative;
+    width: 100px;
+    margin: 10px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.bar-label {
+    position: absolute;
+    bottom: -25px;
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+    color: #333;
+}
+
+.user-details {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: white;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.back-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 5px 10px;
+    color: #1e90ff;
+    transition: transform 0.2s;
+}
+
+.back-button:hover {
+    transform: translateX(-5px);
+}
+
+.user-list-container {
+    margin-bottom: 20px;
+}
+
+.user-item {
+    padding: 10px;
+    margin: 5px 0;
+    background: #f8f9fa;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.user-item:hover {
+    background: #e9ecef;
+}
+
+.upper-section {
+    position: relative;
+    overflow: hidden;
+}
+
+.user-detail-title {
+    font-size: 20px;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.symptoms-section, .solutions-section {
+    margin-bottom: 20px;
+}
+
+.symptoms-section h3, .solutions-section h3 {
+    color: #444;
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.symptoms-list, .solutions-list {
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.symptom-item, .solution-item {
+    padding: 10px;
+    margin: 5px 0;
+    background: white;
+    border-radius: 5px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.user-item {
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.user-item:hover {
+    background-color: #f0f0f0;
 }

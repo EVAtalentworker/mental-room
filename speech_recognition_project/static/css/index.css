@@ -19,23 +19,15 @@
     cursor: default;
 }
 
-.logo-letter {
-    cursor: pointer;
-    transition: color 0.3s ease;
-}
-
-.logo-letter:hover {
-    color: #e6e6e6;
-}
-
 .logo-a {
     text-decoration: none;
     color: white;
+    cursor: default;  /* 保持默认鼠标样式 */
 }
 
-.logo-a:hover {
-    color: #e6e6e6;
-}
+/* 其他样式保持不变 */
+
+/* 删除 hover 样式 */
 
 /* 对话部分的css文件 */
 .floating-bubble {

@@ -1,5 +1,5 @@
 from flask import Flask
-from models import db
+from models import db, User, DangerRecord, RiskRecord  # 添加新的模型导入
 import sqlite3
 import os
 import time
@@ -33,6 +33,7 @@ def update_database():
             # 重新创建数据库
             db.create_all()
             
+            print("正在验证数据库结构...")
             # 验证新数据库结构
             conn = sqlite3.connect(db_path)
             cursor = conn.cursor()

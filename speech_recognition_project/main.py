@@ -5,7 +5,7 @@ import os
 import threading
 import pyttsx3  # 添加 pyttsx3 导入
 from datetime import datetime
-from flask import Flask, render_template, jsonify, send_from_directory, request, redirect, url_for, flash  # Add flash here
+from flask import Flask, render_template, jsonify, send_from_directory, request, redirect, url_for, flash, session  # 添加 session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from models import db, User
 from run import chat, history
@@ -14,7 +14,7 @@ import json
 import random
 from flask_migrate import Migrate
 from datetime import datetime, timedelta
-from models import db, User, Symptom, UserSymptom, Solution
+from models import db, User, DangerRecord, RiskRecord, Symptom, UserSymptom, Solution
 
 def load_knowledge_base():
     kb_path = 'knowledge_base/mental_health_kb.json'
@@ -59,7 +59,7 @@ def detect_dangerous_mood(text):
             '压力好大', '受不了了', '快崩溃了'
         ],
         'social': [
-            '没人理我', '没人在乎', '好孤独',
+            '没人理我', '没人在在乎', '好孤独',
             '不想见人', '讨厌社交', '不合群',
             '格格不入', '没人懂我'
         ]
@@ -77,18 +77,22 @@ def detect_dangerous_mood(text):
                     'word': word,
                     'category': category
                 })
+                
+    # 修改判断逻辑，分开处理危险词和情感值
+    categories = set(item['category'] for item in found_keywords)
     
-    # 根据找到的关键词和情感分数确定响应类型
-    if found_keywords and s.sentiments < 0.3:
-        categories = set(item['category'] for item in found_keywords)
-        if 'severe_danger' in categories:  # 优先检查严重危险词
-            response_type = 'severe_danger'
-        elif 'suicide' in categories:
-            response_type = 'immediate_danger'
-        elif len(categories) >= 2:
-            response_type = 'multiple_symptoms'
-        else:
-            response_type = 'single_symptom'
+    # 首先检查是否有严重危险词，不考虑情感值
+    if 'severe_danger' in categories:
+        response_type = 'severe_danger'
+    # 对于自杀类词汇，结合情感值判断
+    elif 'suicide' in categories and s.sentiments < 0.3:
+        response_type = 'immediate_danger'
+    # 对于多个症状，结合情感值判断
+    elif len(categories) >= 2 and s.sentiments < 0.4:
+        response_type = 'multiple_symptoms'
+    # 单个症状且情感消极
+    elif found_keywords and s.sentiments < 0.3:
+        response_type = 'single_symptom'
             
     # 加载知识库
     kb_data = load_knowledge_base()
@@ -266,10 +270,38 @@ def secret():
 
 @app.route('/admin')
 def admin():
-    total_users = User.query.count()
-    # 获取发送过危险词的用户数量
-    danger_users = User.query.filter(User.has_danger_words == True).count()
-    return render_template('admin.html', total_users=total_users, danger_users=danger_users)
+    try:
+        # 获取所有用户数量
+        total_users = User.query.count()
+        
+        # 获取危险用户数量（只包含有自杀倾向或危害社会倾向的用户）
+        danger_users = User.query.filter(
+            db.and_(
+                User.has_danger_words == True,
+                User.danger_level.in_(['severe', 'high'])  # 使用 in_ 而不是 or
+            )
+        ).count()
+        
+        # 获取隐患用户数量（只包含有普通心理问题的用户）
+        risk_users = User.query.filter(
+            db.and_(
+                User.has_risk_signs == True,
+                ~User.danger_level.in_(['severe', 'high'])  # 使用 ~ 操作符表示 NOT
+            )
+        ).count()
+        
+        print(f"Debug - 总用户数: {total_users}, 危险用户: {danger_users}, 隐患用户: {risk_users}")
+        
+        return render_template('admin.html', 
+                             total_users=total_users, 
+                             danger_users=danger_users,
+                             risk_users=risk_users)
+    except Exception as e:
+        print(f"管理员页面错误: {str(e)}")
+        return render_template('admin.html', 
+                             total_users=0, 
+                             danger_users=0,
+                             risk_users=0)
 
 @app.route('/other')
 def other():
@@ -318,7 +350,7 @@ def save_mood_data(text, sentiment_score, user_id=None):
             
         # 检查危险词
         danger_words = [
-            '自杀', '跳楼', '结束生命', '死', '解脱',
+            '自杀', '跳楼', '结束生命', '死', '绝望',
             '活不下去', '没有希望', '放弃', '绝望',
             '伤害自己', '割腕', '吃药'
         ]
@@ -358,68 +390,16 @@ def chat_endpoint():
                     'error': '请先登录'
                 })
             
-            # 使用全局历史记录
-            response = chat(message, history)
+            # 初始化会话历史记录
+            if 'chat_history' not in session:
+                session['chat_history'] = []
             
             # 检测危险信息
             danger_check = detect_dangerous_mood(message)
             
-            # 更新用户状态
-            if danger_check['is_dangerous'] or danger_check['is_severe']:
-                user = db_session.query(User).get(current_user.id)
-                user.has_danger_words = True
-                user.danger_word_count = user.danger_word_count + 1
-                user.last_danger_time = datetime.now()
-                
-                # 如果是严重危险词
-                if danger_check['is_severe']:
-                    user.severe_danger_count = user.severe_danger_count + 1
-                
-                # 更新危险等级
-                if user.severe_danger_count > 0:
-                    user.danger_level = 'severe'
-                elif user.danger_word_count >= 3:
-                    user.danger_level = 'high'
-                else:
-                    user.danger_level = 'medium'
-                    
-                db_session.add(user)
-                
-                # 记录危险行为
-                danger_record = DangerRecord(
-                    user_id=current_user.id,
-                    content=message,
-                    danger_type='severe' if danger_check['is_severe'] else 'normal',
-                    detected_words=','.join([kw['word'] for kw in danger_check['found_keywords']]),
-                    sentiment_score=danger_check['sentiment_score']
-                )
-                db_session.add(danger_record)
-                db_session.commit()
-                
-            elif danger_check['is_risk']:
-                user = User.query.get(current_user.id)
-                user.has_risk_signs = True
-                user.risk_count = user.risk_count + 1
-                user.last_risk_time = datetime.now()
-                
-                # 记录风险行为
-                risk_record = RiskRecord(
-                    user_id=current_user.id,
-                    content=message,
-                    risk_type=danger_check['categories'][0] if danger_check['categories'] else 'unknown',
-                    detected_patterns=','.join([kw['word'] for kw in danger_check['found_keywords']]),
-                    sentiment_score=danger_check['sentiment_score']
-                )
-                db_session.add(risk_record)
-                db_session.commit()
-            
-            # 保存心情数据
-            save_mood_data(message, None, current_user.id)
-            
             # 根据不同类型的症状提供相应的回复
             if danger_check['is_dangerous']:
                 if danger_check['kb_responses']:
-                    # 使用知识库的回应
                     kb_response = danger_check['kb_responses'][0]
                     response = f"{kb_response['response']}\n\n建议：\n" + \
                               "\n".join(f"- {s}" for s in kb_response['suggestions'])
@@ -438,6 +418,64 @@ def chat_endpoint():
                     print(f"Chat API 错误: {str(e)}")
                     response = "抱歉，我现在有点忙，请稍后再试。"
             
+            # 更新会话历史记录
+            session['chat_history'].append({"role": "user", "content": message})
+            session['chat_history'].append({"role": "assistant", "content": response})
+            
+            # 限制历史记录长度，防止会话过长
+            if len(session['chat_history']) > 20:  # 保留最近的10轮对话
+                session['chat_history'] = session['chat_history'][-20:]
+            
+            # 更新用户状态
+            if danger_check['is_dangerous'] or danger_check['is_severe']:
+                try:
+                    user = db_session.query(User).get(current_user.id)
+                    if user:
+                        print(f"危险检查结果: {danger_check}")
+                        print(f"更新前 - 用户 {user.username}: danger_words={user.has_danger_words}, count={user.danger_word_count}, level={user.danger_level}")
+                        
+                        # 更新危险用户状态
+                        user.has_danger_words = True
+                        user.danger_word_count = getattr(user, 'danger_word_count', 0) + 1
+                        user.last_danger_time = datetime.now()
+                        
+                        if danger_check['is_severe']:
+                            user.severe_danger_count = getattr(user, 'severe_danger_count', 0) + 1
+                            user.danger_level = 'severe'
+                        elif user.danger_word_count >= 3:
+                            user.danger_level = 'high'
+                        else:
+                            user.danger_level = 'medium'
+                        
+                        # 如果是危险用户，移除隐患标记
+                        user.has_risk_signs = False
+                        user.risk_count = 0
+                        
+                        db_session.add(user)
+                        db_session.commit()
+                        print(f"更新后 - 用户 {user.username}: danger_words={user.has_danger_words}, count={user.danger_word_count}, level={user.danger_level}")
+                        
+                except Exception as e:
+                    print(f"更新用户状态失败: {str(e)}")
+                    db_session.rollback()
+                
+            elif danger_check['is_risk']:
+                try:
+                    user = User.query.get(current_user.id)
+                    if user and not user.has_danger_words:  # 只有非危险用户才能被标记为隐患用户
+                        user.has_risk_signs = True
+                        user.risk_count = getattr(user, 'risk_count', 0) + 1
+                        user.last_risk_time = datetime.now()
+                        
+                        db_session.add(user)
+                        db_session.commit()
+                except Exception as e:
+                    print(f"更新隐患用户状态失败: {str(e)}")
+                    db_session.rollback()
+                
+            # 保存心情数据
+            save_mood_data(message, None, current_user.id)
+            
             if is_voice_mode:
                 threading.Thread(target=speak_text, args=(response,)).start()
                 
@@ -447,6 +485,7 @@ def chat_endpoint():
                 'danger_detected': danger_check['is_dangerous'],
                 'mood_analysis': danger_check
             })
+            
         finally:
             db_session.close()
     except Exception as e:
@@ -617,75 +656,120 @@ def load_user(user_id):
 
 @app.route('/get_users')
 def get_users():
-    user_type = request.args.get('type', 'all')
-    if user_type == 'danger':
-        # 危险用户判定：同时满足多个条件
-        dangerous_users = User.query.filter(
-            db.and_(
-                User.has_danger_words == True,
-                db.or_(
-                    User.severe_danger_count > 0,  # 出现过严重危险词
-                    User.danger_word_frequency >= 3,  # 危险词出现频率较高
-                    User.average_sentiment < 0.2  # 情感值持续低迷
+    try:
+        user_type = request.args.get('type', 'all')
+        
+        if user_type == 'danger':
+            # 获取危险用户列表
+            users = User.query.filter(
+                db.and_(
+                    User.has_danger_words == True,
+                    User.danger_level.in_(['severe', 'high'])
                 )
-            )
-        ).all()
-        return jsonify([{'username': user.username} for user in dangerous_users])
-    
-    elif user_type == 'risk':
-        # 隐患用户判定：满足任一组行为模式
-        risk_users = User.query.filter(
-            db.or_(
-                # 行为变化模式
+            ).all()
+            
+        elif user_type == 'risk':
+            # 获取隐患用户列表
+            users = User.query.filter(
                 db.and_(
-                    User.behavior_changes == True,
-                    User.behavior_duration >= timedelta(days=7)  # 持续时间超过7天
-                ),
-                # 认知变化模式
-                db.and_(
-                    User.cognitive_changes == True,
-                    User.cognitive_frequency >= 3  # 出现频率较高
-                ),
-                # 社交变化模式
-                db.and_(
-                    User.social_changes == True,
-                    User.social_isolation_days >= 5  # 社交隔离天数
+                    User.has_risk_signs == True,
+                    ~User.danger_level.in_(['severe', 'high'])
                 )
+            ).all()
+            
+        else:
+            # 获取所有用户列表
+            users = User.query.all()
+        
+        # 转换用户对象为JSON格式
+        users_data = [{
+            'id': user.id,
+            'username': user.username,
+            'status': 'danger' if user.has_danger_words else ('risk' if user.has_risk_signs else 'normal'),
+            'level': user.danger_level if user.has_danger_words else None,
+            'last_check_time': user.last_danger_time.strftime('%Y-%m-%d %H:%M:%S') if user.last_danger_time else (
+                user.last_risk_time.strftime('%Y-%m-%d %H:%M:%S') if user.last_risk_time else None
             )
-        ).all()
-        return jsonify([{'username': user.username} for user in risk_users])
-    
-    else:
-        users = User.query.all()
-        return jsonify([{'username': user.username} for user in users])
+        } for user in users]
+        
+        return jsonify(users_data)
+        
+    except Exception as e:
+        print(f"获取用户列表失败: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/get_user_details/<username>')
 def get_user_details(username):
-    user = User.query.filter_by(username=username).first()
-    if not user:
-        return jsonify({'error': '用户不存在'}), 404
+    try:
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            return jsonify({'error': '用户不存在'}), 404
+            
+        # 获取用户的危险行为记录
+        danger_details = []
+        if user.has_danger_words:
+            danger_records = DangerRecord.query.filter_by(user_id=user.id).order_by(DangerRecord.created_at.desc()).limit(5).all()
+            for record in danger_records:
+                danger_details.append({
+                    'type': record.danger_type,
+                    'content': record.content,
+                    'time': record.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                    'level': record.severity_level
+                })
         
-    # 获取用户的症状记录
-    user_symptoms = UserSymptom.query.filter_by(user_id=user.id).all()
-    symptoms = []
-    solutions = []
-    
-    for user_symptom in user_symptoms:
-        symptom = Symptom.query.get(user_symptom.symptom_id)
-        if symptom:
-            symptoms.append({
-                'name': symptom.name,
-                'frequency': user_symptom.frequency
-            })
-            # 获取该症状的解决方案
-            symptom_solutions = get_solutions(symptom.id)
-            solutions.extend(symptom_solutions)
-    
-    return jsonify({
-        'username': username,
-        'symptoms': symptoms,
-        'solutions': list(set(solutions))  # 去重
-    })
+        # 获取用户的隐患行为记录
+        risk_details = []
+        if user.has_risk_signs:
+            risk_records = RiskRecord.query.filter_by(user_id=user.id).order_by(RiskRecord.created_at.desc()).limit(5).all()
+            for record in risk_records:
+                risk_details.append({
+                    'type': record.risk_type,
+                    'content': record.content,
+                    'time': record.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+                    'patterns': record.detected_patterns
+                })
+        
+        # 根据用户状态获取建议的解决方案
+        solutions = []
+        if user.has_danger_words:
+            if user.danger_level == 'severe':
+                solutions.extend([
+                    "立即联系心理咨询师或拨打心理援助热线",
+                    "建议家人或朋友陪伴，不要独处",
+                    "及时就医，接受专业医生的评估和建议"
+                ])
+            elif user.danger_level == 'high':
+                solutions.extend([
+                    "尽快寻求专业心理咨询帮助",
+                    "保持与亲友的联系，多倾诉心事",
+                    "调整作息规律，保持健康的生活方式"
+                ])
+        elif user.has_risk_signs:
+            solutions.extend([
+                "关注自己的情绪变化",
+                "保持规律的作息和健康的生活方式",
+                "适当运动，培养积极的兴趣爱好",
+                "有需要时及时寻求心理咨询帮助"
+            ])
+        
+        return jsonify({
+            'username': user.username,
+            'status': {
+                'is_danger': user.has_danger_words,
+                'danger_level': user.danger_level if user.has_danger_words else None,
+                'is_risk': user.has_risk_signs,
+                'last_check': user.last_danger_time.strftime('%Y-%m-%d %H:%M:%S') if user.last_danger_time else None
+            },
+            'details': {
+                'danger_records': danger_details,
+                'risk_records': risk_details
+            },
+            'solutions': solutions
+        })
+        
+    except Exception as e:
+        print(f"获取用户详情失败: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/get_user_basic_info/<username>')
 def get_user_basic_info(username):

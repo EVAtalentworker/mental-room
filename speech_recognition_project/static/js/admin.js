@@ -164,58 +164,129 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 function showUserDetails(username, userType) {
-    const detailsContainer = document.getElementById('user-details');
-    if (!detailsContainer) {
-        console.error('Details container not found');
+    const userDetails = document.getElementById('userDetails');
+    if (!userDetails) {
+        console.error('用户详情容器未找到');
         return;
     }
     
-    if (userType === 'total') {
-        // 总用户 - 显示创建日期和今日上线时间
-        fetch(`/get_user_basic_info/${encodeURIComponent(username)}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                detailsContainer.innerHTML = `
-                    <h3>${username} 的基本信息</h3>
-                    <p>创建日期：${data.created_at || '未知'}</p>
-                    <p>今日上线时间：${data.last_login || '今日未登录'}</p>
-                `;
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                detailsContainer.innerHTML = '获取用户信息失败: ' + error.message;
-            });
-    } else {
-        // 危险用户和隐患用户 - 显示症状信息
-        fetch(`/get_user_symptoms/${username}`)
-            .then(response => response.json())
-            .then(data => {
-                let symptomsHtml = '';
-                if (data.symptoms && data.symptoms.length > 0) {
-                    symptomsHtml = `
-                        <h4>检测到的症状：</h4>
-                        <ul>
-                            ${data.symptoms.map(s => `<li>${s.name}: ${s.description}</li>`).join('')}
-                        </ul>
-                    `;
-                }
-                
-                detailsContainer.innerHTML = `
-                    <h3>${username} 的症状记录</h3>
-                    ${symptomsHtml}
-                    <p>最近检测时间：${data.last_check_time || '暂无记录'}</p>
-                `;
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                detailsContainer.innerHTML = '获取用户症状信息失败';
-            });
+    // 隐藏用户列表容器
+    const userListContainer = document.querySelector('.user-list-container');
+    if (userListContainer) {
+        userListContainer.style.display = 'none';
     }
+    
+    // 显示用户详情面板并添加加载提示
+    userDetails.style.display = 'block';
+    userDetails.innerHTML = `
+        <button class="back-button">←</button>
+        <div class="user-detail-header">
+            <h2 class="user-detail-title">用户 ${username} 的心理健康报告</h2>
+        </div>
+    `;
+    
+    // 发起请求获取用户详情
+    fetch(`/get_user_details/${encodeURIComponent(username)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(userData => {
+            let detailsHtml = `
+                <button class="back-button">←</button>
+                <div class="user-detail-header">
+                    <h2 class="user-detail-title">用户 ${username} 的心理健康报告</h2>
+                    <div class="user-status ${userData.status && userData.status.is_danger ? 'danger' : (userData.status && userData.status.is_risk ? 'risk' : 'normal')}">
+                        <p class="status-text">当前状态: ${userData.status && userData.status.is_danger ? '需要立即干预' : (userData.status && userData.status.is_risk ? '需要关注' : '状态正常')}</p>
+                        ${userData.status && userData.status.danger_level ? `<p class="danger-level">风险等级: ${userData.status.danger_level}</p>` : ''}
+                    </div>
+                </div>
+
+                <div class="health-report-section">
+                    <div class="symptoms-section">
+                        <h3>📋 检测到的异常表现</h3>
+                        <div class="symptoms-list">
+            `;
+
+            // 添加症状/行为记录
+            if (userData.details && userData.details.danger_records && userData.details.danger_records.length > 0) {
+                detailsHtml += userData.details.danger_records.map(record => `
+                    <div class="symptom-item">
+                        <div class="symptom-header">
+                            <h4>${record.type}</h4>
+                            <span class="symptom-time">检测时间: ${record.time}</span>
+                        </div>
+                        <p class="symptom-desc">${record.content}</p>
+                        ${record.level ? `<p class="symptom-level">严重程度: ${record.level}</p>` : ''}
+                    </div>
+                `).join('');
+            } else if (userData.details && userData.details.risk_records && userData.details.risk_records.length > 0) {
+                detailsHtml += userData.details.risk_records.map(record => `
+                    <div class="symptom-item">
+                        <div class="symptom-header">
+                            <h4>${record.type}</h4>
+                            <span class="symptom-time">检测时间: ${record.time}</span>
+                        </div>
+                        <p class="symptom-desc">${record.content}</p>
+                    </div>
+                `).join('');
+            } else {
+                detailsHtml += '<p class="no-data">暂未检测到异常行为表现</p>';
+            }
+
+            detailsHtml += `
+                        </div>
+                    </div>
+
+                    <div class="solutions-section">
+                        <h3>💡 专业建议</h3>
+                        <div class="solutions-list">
+            `;
+
+            // 添加解决方案
+            if (userData.solutions && userData.solutions.length > 0) {
+                detailsHtml += userData.solutions.map((solution, index) => `
+                    <div class="solution-item">
+                        <span class="solution-number">${index + 1}</span>
+                        <p class="solution-content">${solution}</p>
+                    </div>
+                `).join('');
+            } else {
+                detailsHtml += '<p class="no-data">暂无具体建议</p>';
+            }
+
+            detailsHtml += `
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            userDetails.innerHTML = detailsHtml;
+
+            // 重新添加返回按钮事件监听
+            const backButton = userDetails.querySelector('.back-button');
+            if (backButton) {
+                backButton.addEventListener('click', function() {
+                    userDetails.style.display = 'none';
+                    if (userListContainer) {
+                        userListContainer.style.display = 'block';
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            console.error('获取用户详情失败:', error);
+            userDetails.innerHTML = `
+                <button class="back-button">←</button>
+                <h2 class="user-detail-title">获取数据失败</h2>
+                <div class="error-message">
+                    <p>抱歉，获取用户详情时出现错误</p>
+                    <p class="error-details">${error.message}</p>
+                </div>
+            `;
+        });
 }
 
 // 修改点击事件处理函数

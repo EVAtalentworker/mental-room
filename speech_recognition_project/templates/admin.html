@@ -36,8 +36,8 @@
     
     <script>
         const totalUsers = {{ total_users }};
-        const dangerUsers = {{ danger_users }};
-        const riskUsers = {{ danger_users }};
+        const dangerUsers = {{ danger_users|tojson }};
+        const riskUsers = {{ risk_users|tojson }};
     </script>
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 </body>
